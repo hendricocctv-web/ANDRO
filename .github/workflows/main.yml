@@ -7,35 +7,34 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java JDK 11
+      - name: Setup Java JDK 11 (No Cache Mode)
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'zulu'
-          cache: 'gradle'
 
       - name: Grant Execute Permission for Gradle
         run: |
-          if [ -f "gradlew" ]; then
-            chmod +x gradlew
-          elif [ -f "ANDRO1click/gradlew" ]; then
-            cd ANDRO1click && chmod +x gradlew
-          fi
+          find . -name "gradlew" -exec chmod +x {} \;
 
-      - name: Build With Gradle (Root or Sub-Folder)
+      - name: Build With Gradle Automatic Path
         run: |
-          if [ -f "gradlew" ]; then
-            ./gradlew assembleDebug --no-daemon
-          elif [ -f "ANDRO1click/gradlew" ]; then
-            cd ANDRO1click && ./gradlew assembleDebug --no-daemon
+          # Cari di mana letak file gradlew asli di dalam repositori
+          GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+          
+          if [ -z "$GRADLEW_PATH" ]; then
+            echo "Aset gradlew tidak ditemukan! Mencari folder dengan build.gradle..."
+            GRADLE_DIR=$(find . -name "build.gradle" -exec dirname {} \; | head -n 1)
+            cd $GRADLE_DIR
+            gradle assembleDebug --no-daemon
           else
-            echo "Mencari file build.gradle bawaan..."
-            cd $(find . -name "build.gradle" -exec dirname {} \; | head -n 1)
-            chmod +x gradlew || true
+            GRADLE_DIR=$(dirname "$GRADLEW_PATH")
+            echo "Menjalankan kompilasi di folder: $GRADLE_DIR"
+            cd $GRADLE_DIR
             ./gradlew assembleDebug --no-daemon
           fi
 
-      - name: Upload Real Native APK
+      - name: Upload Real Native APK Result
         uses: actions/upload-artifact@v4
         with:
           name: Aplikasi-Andro1Click-Asli-Native
