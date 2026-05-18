@@ -18,22 +18,33 @@ jobs:
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Force Install Capacitor Core Locally
-        run: npm install @capacitor/core @capacitor/cli --save-dev --legacy-peer-deps
+      - name: Force Install Capacitor Packages Locally
+        run: npm install @capacitor/core @capacitor/cli @capacitor/android --save-dev --legacy-peer-deps
 
       - name: Build Web Assets
         run: npm run build --if-present
 
-      - name: Sync Capacitor Android
+      - name: Initialize and Add Android Platform
         run: |
           npx cap init "Andro1Click" "com.andro1click.app" --web-dir=build || true
-          npx cap add android || true
-          npx @capacitor/cli sync android
+          npx cap add android
+          npx cap sync android
 
       - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
+          distribution: 'zulu'
+
+      - name: Build Android APK
+        run: |
+          cd android && ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aplikasi-Andro1Click-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
           distribution: 'zulu'
 
       - name: Build Android APK
