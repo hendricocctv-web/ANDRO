@@ -15,25 +15,34 @@ jobs:
       - name: Install Legacy Capacitor CLI Global
         run: npm install -g @ionic/cli @capacitor/cli@4.8.2
 
-      - name: Install Dependencies
+      - name: Install Root Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Force Install Matching Capacitor Locally
+      - name: Install Sub-Folder Dependencies and Build Assets
+        run: |
+          if [ -d "ANDRO1click" ]; then
+            cd ANDRO1click
+            npm install --legacy-peer-deps
+            npm run build --if-present
+            mkdir -p build www dist
+            cp -r * build/ 2>/dev/null || true
+            cd ..
+            cp -r ANDRO1click/build ./build
+          fi
+
+      - name: Force Install Capacitor Packages Locally
         run: npm install @capacitor/core@4.8.2 @capacitor/cli@4.8.2 @capacitor/android@4.8.2 --save-dev --legacy-peer-deps
 
       - name: Create Missing Ionic Config File
         run: |
           echo '{"name": "Andro1Click", "integrations": {"capacitor": {}}, "type": "custom"}' > ionic.config.json
 
-      - name: Build Web Assets
-        run: npm run build --if-present
-
-      - name: Create Fallback Web Directories and Dummy HTML
+      - name: Create Fallback HTML If Empty
         run: |
           mkdir -p build www dist
-          echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body></body></html>' > build/index.html
-          echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body></body></html>' > www/index.html
-          echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body></body></html>' > dist/index.html
+          if [ ! -f "build/index.html" ]; then
+            echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body><h1>App Target Missing</h1></body></html>' > build/index.html
+          fi
 
       - name: Initialize and Add Android Platform
         run: |
@@ -52,3 +61,9 @@ jobs:
           chmod -R +x android/
           cd android
           ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK Real
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aplikasi-Andro1Click-Real-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
