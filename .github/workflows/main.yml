@@ -28,8 +28,12 @@ jobs:
       - name: Build Web Assets
         run: npm run build --if-present
 
-      - name: Create Fallback Web Directory
-        run: mkdir -p build www dist
+      - name: Create Fallback Web Directories and Dummy HTML
+        run: |
+          mkdir -p build www dist
+          echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body></body></html>' > build/index.html
+          echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body></body></html>' > www/index.html
+          echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body></body></html>' > dist/index.html
 
       - name: Initialize and Add Android Platform
         run: |
