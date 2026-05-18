@@ -21,30 +21,26 @@ jobs:
       - name: Force Install Capacitor Packages Locally
         run: npm install @capacitor/core @capacitor/cli @capacitor/android --save-dev --legacy-peer-deps
 
+      - name: Create Missing Ionic Config File
+        run: |
+          echo '{"name": "Andro1Click", "integrations": {"capacitor": {}}, "type": "custom"}' > ionic.config.json
+
       - name: Build Web Assets
         run: npm run build --if-present
+
+      - name: Create Fallback Web Directory
+        run: mkdir -p build www dist
 
       - name: Initialize and Add Android Platform
         run: |
           npx cap init "Andro1Click" "com.andro1click.app" --web-dir=build || true
-          npx cap add android
+          npx cap add android || true
           npx cap sync android
 
       - name: Setup Java JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
-          distribution: 'zulu'
-
-      - name: Build Android APK
-        run: |
-          cd android && ./gradlew assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Aplikasi-Andro1Click-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
           distribution: 'zulu'
 
       - name: Build Android APK
