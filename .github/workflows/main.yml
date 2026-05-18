@@ -1,4 +1,4 @@
-name: Build Ionic Capacitor APK
+name: Build Pure Android Native APK
 on: [push, workflow_dispatch]
 
 jobs:
@@ -7,65 +7,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 16
-
-      - name: Install Legacy Capacitor CLI Global
-        run: npm install -g @ionic/cli @capacitor/cli@4.8.2
-
-      - name: Install Project Dependencies
-        run: |
-          npm install --legacy-peer-deps || true
-          if [ -d "ANDRO1click" ]; then
-            cd ANDRO1click && npm install --legacy-peer-deps || true
-          fi
-
-      - name: Force Heavy Copy All Web Assets
-        run: |
-          mkdir -p build www dist
-          # Salin semua file dari root ke folder build agar terbaca sebagai target utama
-          cp -r * build/ 2>/dev/null || true
-          # Jika ada subfolder, satukan semua isinya ke target build
-          if [ -d "ANDRO1click" ]; then
-            cp -r ANDRO1click/* build/ 2>/dev/null || true
-          fi
-          if [ -d "app" ]; then
-            cp -r app/* build/ 2>/dev/null || true
-          fi
-          # Pastikan file index utama tidak tertimpa dummy kosong
-          if [ ! -f "build/index.html" ]; then
-            echo '<!DOCTYPE html><html><head><title>Andro1Click</title></head><body><h1>System Loaded From Root</h1></body></html>' > build/index.html
-          fi
-
-      - name: Force Install Capacitor Packages Locally
-        run: npm install @capacitor/core@4.8.2 @capacitor/cli@4.8.2 @capacitor/android@4.8.2 --save-dev --legacy-peer-deps
-
-      - name: Create Missing Ionic Config File
-        run: |
-          echo '{"name": "Andro1Click", "integrations": {"capacitor": {}}, "type": "custom"}' > ionic.config.json
-
-      - name: Initialize and Add Android Platform
-        run: |
-          npx cap init "Andro1Click" "com.andro1click.app" --web-dir=build || true
-          npx cap add android || true
-          npx cap sync android
-
       - name: Setup Java JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'zulu'
+          cache: 'gradle'
 
-      - name: Build Android APK
+      - name: Grant Execute Permission for Gradle
         run: |
-          chmod -R +x android/
-          cd android
-          ./gradlew assembleDebug --no-daemon
+          if [ -f "gradlew" ]; then
+            chmod +x gradlew
+          elif [ -f "ANDRO1click/gradlew" ]; then
+            cd ANDRO1click && chmod +x gradlew
+          fi
 
-      - name: Upload APK Real Fix
+      - name: Build With Gradle (Root or Sub-Folder)
+        run: |
+          if [ -f "gradlew" ]; then
+            ./gradlew assembleDebug --no-daemon
+          elif [ -f "ANDRO1click/gradlew" ]; then
+            cd ANDRO1click && ./gradlew assembleDebug --no-daemon
+          else
+            echo "Mencari file build.gradle bawaan..."
+            cd $(find . -name "build.gradle" -exec dirname {} \; | head -n 1)
+            chmod +x gradlew || true
+            ./gradlew assembleDebug --no-daemon
+          fi
+
+      - name: Upload Real Native APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aplikasi-Andro1Click-Real-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: Aplikasi-Andro1Click-Asli-Native
+          path: |
+            **/build/outputs/apk/debug/*.apk
+            **/build/outputs/apk/release/*.apk
