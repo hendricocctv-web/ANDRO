@@ -10,16 +10,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 16
 
-      - name: Install Ionic and Capacitor CLI Global
-        run: npm install -g @ionic/cli @capacitor/cli
+      - name: Install Legacy Capacitor CLI Global
+        run: npm install -g @ionic/cli @capacitor/cli@4.8.2
 
       - name: Install Dependencies
         run: npm install --legacy-peer-deps
 
-      - name: Force Install Capacitor Packages Locally
-        run: npm install @capacitor/core @capacitor/cli @capacitor/android --save-dev --legacy-peer-deps
+      - name: Force Install Matching Capacitor Locally
+        run: npm install @capacitor/core@4.8.2 @capacitor/cli@4.8.2 @capacitor/android@4.8.2 --save-dev --legacy-peer-deps
 
       - name: Create Missing Ionic Config File
         run: |
@@ -41,15 +41,14 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Setup Java JDK 11 (Test Down-grade)
+      - name: Setup Java JDK 11
         uses: actions/setup-java@v4
         with:
           java-version: '11'
           distribution: 'zulu'
-          cache: 'gradle'
 
-      - name: Test Build Android APK
+      - name: Build Android APK
         run: |
           chmod -R +x android/
           cd android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleDebug --no-daemon
