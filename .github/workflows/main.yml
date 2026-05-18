@@ -1,4 +1,4 @@
-name: Build Pure Android Native APK
+name: Build Ionic Capacitor APK
 on: [push, workflow_dispatch]
 
 jobs:
@@ -7,41 +7,61 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java JDK 17
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 16
+
+      - name: Install Legacy Capacitor CLI Global
+        run: npm install -g @ionic/cli @capacitor/cli@4.8.2
+
+      - name: Install Root Dependencies
+        run: npm install --legacy-peer-deps || true
+
+      - name: Intelligent Web Asset Mirroring
+        run: |
+          mkdir -p build www dist
+          
+          # Cari di mana letak file index.html asli bawaan repositori
+          REAL_WEB_DIR=$(find . -name "index.html" ! -path "*/build/*" ! -path "*/www/*" ! -path "*/dist/*" -exec dirname {} \; | head -n 1)
+          
+          if [ ! -z "$REAL_WEB_DIR" ]; then
+            echo "Aset Web asli ditemukan di: $REAL_WEB_DIR"
+            cp -r $REAL_WEB_DIR/* build/
+            cp -r $REAL_WEB_DIR/* www/
+          else
+            echo "Aset web tidak terdeteksi, melakukan kloning menyeluruh dari root..."
+            cp -r * build/ 2>/dev/null || true
+            cp -r * www/ 2>/dev/null || true
+          fi
+
+      - name: Force Install Capacitor Packages Locally
+        run: npm install @capacitor/core@4.8.2 @capacitor/cli@4.8.2 @capacitor/android@4.8.2 --save-dev --legacy-peer-deps
+
+      - name: Create Missing Ionic Config File
+        run: |
+          echo '{"name": "Andro1Click", "integrations": {"capacitor": {}}, "type": "custom"}' > ionic.config.json
+
+      - name: Initialize and Add Android Platform
+        run: |
+          npx cap init "Andro1Click" "com.andro1click.app" --web-dir=build || true
+          npx cap add android || true
+          npx cap sync android
+
+      - name: Setup Java JDK 11
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11'
           distribution: 'zulu'
 
-      - name: Build Android APK (Strict Path Mode)
+      - name: Build Android APK Final
         run: |
-          echo "=== Mencari file build.gradle di dalam repositori ==="
-          # Cari folder yang BENAR-BENAR berisi build.gradle di dalam repositori proyek
-          TARGET_DIR=$(find . -maxdepth 3 -name "build.gradle" ! -path "*/.*" -exec dirname {} \; | head -n 1)
-          
-          if [ -z "$TARGET_DIR" ]; then
-            echo "Eror: Tidak ditemukan file build.gradle di dalam repositori kamu!"
-            exit 1
-          fi
-          
-          echo "Folder proyek ditemukan di: $TARGET_DIR"
-          cd "$TARGET_DIR"
-          
-          # Cek apakah ada gradlew lokal, jika tidak ada, buat baru pakai gradle global
-          if [ ! -f "gradlew" ]; then
-            echo "File gradlew tidak ada. Membuat gradle wrapper baru..."
-            gradle wrapper
-          fi
-          
-          chmod +x gradlew
-          
-          echo "=== Memulai Kompilasi APK ==="
-          ./gradlew assembleDebug --stacktrace --no-daemon
+          chmod -R +x android/
+          cd android
+          ./gradlew assembleDebug --no-daemon
 
-      - name: Upload Real Native APK Result
+      - name: Upload Real Target APK
         uses: actions/upload-artifact@v4
         with:
-          name: Aplikasi-Andro1Click-Asli-Native
-          path: |
-            **/build/outputs/apk/debug/*.apk
-            **/build/outputs/apk/release/*.apk
+          name: Aplikasi-Andro1Click-Real-Target-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
