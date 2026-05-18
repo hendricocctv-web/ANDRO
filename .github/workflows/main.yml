@@ -47,9 +47,14 @@ jobs:
           java-version: '17'
           distribution: 'zulu'
 
+      - name: Fix Directory Permissions and Clean Gradle
+        run: |
+          chmod -R +x android/
+          cd android && ./gradlew clean
+
       - name: Build Android APK
         run: |
-          cd android && ./gradlew assembleDebug
+          cd android && ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
