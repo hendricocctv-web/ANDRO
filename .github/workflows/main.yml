@@ -41,23 +41,15 @@ jobs:
           npx cap add android || true
           npx cap sync android
 
-      - name: Setup Java JDK 17
+      - name: Setup Java JDK 11 (Test Down-grade)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11'
           distribution: 'zulu'
+          cache: 'gradle'
 
-      - name: Fix Directory Permissions and Clean Gradle
+      - name: Test Build Android APK
         run: |
           chmod -R +x android/
-          cd android && ./gradlew clean
-
-      - name: Build Android APK
-        run: |
-          cd android && ./gradlew assembleDebug --no-daemon --stacktrace
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Aplikasi-Andro1Click-APK
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace
