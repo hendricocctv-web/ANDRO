@@ -7,10 +7,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Java JDK 11 (No Cache Mode)
+      - name: Setup Java JDK 17 (Required by Gradle)
         uses: actions/setup-java@v4
         with:
-          java-version: '11'
+          java-version: '17'
           distribution: 'zulu'
 
       - name: Grant Execute Permission for Gradle
